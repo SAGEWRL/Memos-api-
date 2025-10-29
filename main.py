@@ -1,5 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Securitypwfd
-p[], Depends
+from fastapi import FastAPI, HTTPException, Request, Depends, Security
 from fastapi.security.api_key import APIKeyHeader, APIKey
 from pydantic import BaseModel
 from textblob import TextBlob
