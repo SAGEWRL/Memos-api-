@@ -1,69 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MemOS API Key Generator</title>
+  <title>MemOS API Portal</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #0b0b0b;
-      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       text-align: center;
-      padding: 50px;
     }
-    .box {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 10px;
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    p {
       max-width: 400px;
-      margin: auto;
-      box-shadow: 0 0 10px #00f6ff33;
+      margin-bottom: 20px;
     }
     input {
-      width: 90%;
       padding: 10px;
-      margin: 10px;
+      width: 250px;
       border: none;
       border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 1rem;
     }
     button {
       padding: 10px 20px;
       border: none;
-      background: #00f6ff;
-      color: #000;
-      font-weight: bold;
       border-radius: 5px;
+      font-size: 1rem;
+      background-color: #00b4d8;
+      color: white;
       cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #0077b6;
     }
     .key-box {
-      margin-top: 15px;
-      word-wrap: break-word;
-      font-family: monospace;
-      color: #00f6ff;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 20px;
+      font-size: 1rem;
+      width: 280px;
+      word-break: break-all;
+    }
+    footer {
+      position: absolute;
+      bottom: 15px;
+      font-size: 0.8rem;
+      color: #bbb;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>Generate Your API Key</h2>
-    <input id="name" placeholder="Your Name" />
-    <input id="email" placeholder="Email (optional)" />
-    <button onclick="generateKey()">Generate Key</button>
-    <div id="output" class="key-box"></div>
+  <h1>🔑 MemOS API Portal</h1>
+  <p>Generate your personal MemOS API key to access intelligent services and integrations.</p>
+  
+  <input type="text" id="username" placeholder="Enter your name or email" />
+  <button id="generateBtn">Generate API Key</button>
+
+  <div id="keyContainer" class="key-box" style="display:none;">
+    <p>Your API Key:</p>
+    <p id="apiKey" style="font-weight: bold;"></p>
+    <button onclick="copyKey()">Copy Key</button>
   </div>
 
+  <footer>© 2025 MemOS Network — Powered by J.C. Washington</footer>
+
   <script>
-    async function generateKey() {
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
-      const response = await fetch("https://memos-api-ahnh.onrender.com/api/generate_key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email })
-      });
-      const data = await response.json();
-      document.getElementById("output").innerText = data.key ? `Your key: ${data.key}` : "Error generating key.";
+    // 🔗 Backend endpoint hosted on Render
+    const backendURL = "https://memos-api-ahnh.onrender.com/api/generate_key";
+
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+      const username = document.getElementById('username').value.trim();
+      if (!username) {
+        alert("Please enter your name or email first!");
+        return;
+      }
+
+      try {
+        const response = await fetch(backendURL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username })
+        });
+        const data = await response.json();
+        if (data.key || data.api_key) {
+          const key = data.key || data.api_key;
+          document.getElementById('apiKey').innerText = key;
+          document.getElementById('keyContainer').style.display = "block";
+        } else {
+          alert("Error generating key: " + (data.detail || "Unknown error"));
+        }
+      } catch (error) {
+        alert("Connection failed. Check if your API is running.");
+        console.error(error);
+      }
+    });
+
+    function copyKey() {
+      const text = document.getElementById('apiKey').innerText;
+      navigator.clipboard.writeText(text);
+      alert("✅ API Key copied to clipboard!");
     }
   </script>
 </body>
