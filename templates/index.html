@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemOS Memory API</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 { color: #00bcd4; }
+        p { opacity: 0.8; }
+        button {
+            background: #00bcd4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 MemOS Memory API</h1>
+    <p>Welcome! Generate an API key to access the endpoints.</p>
+    <button onclick="generateKey()">Generate Key</button>
+    <p id="result"></p>
+
+    <script>
+        async function generateKey() {
+            const res = await fetch('/api/generate_key', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('result').innerText = '🔑 Your API Key: ' + data.key;
+        }
+    </script>
+</body>
+</html>
