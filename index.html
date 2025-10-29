@@ -57,7 +57,7 @@
     async function generateKey() {
       const name = document.getElementById("name").value;
       const email = document.getElementById("email").value;
-      const response = await fetch("https://YOUR_BACKEND_URL/api/generate_key", {
+      const response = await fetch("https://memos-api-ahnh.onrender.com/api/generate_key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email })
