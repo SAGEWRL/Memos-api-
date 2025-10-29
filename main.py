@@ -16,10 +16,11 @@ USER_KEYS = ["USER-abc123", "USER-xyz456"]
 API_KEY_NAME = "x-api-key"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
-# Serve static + templates
+# 📁 Serve static + templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+# 🔍 Verify API key
 async def get_api_key(api_key_header: str = Security(api_key_header)):
     if api_key_header == ADMIN_KEY:
         return {"type": "admin", "key": api_key_header}
@@ -32,12 +33,15 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
 class SentimentRequest(BaseModel):
     text: str
 
+# 🧠 Memory store
 memory = []
 
+# 🏠 Homepage (frontend)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# 💬 Analyze & store sentiment
 @app.post("/sentiment/")
 async def analyze_sentiment(data: SentimentRequest, api_key: dict = Depends(get_api_key)):
     sentiment_score = TextBlob(data.text).sentiment.polarity
@@ -45,10 +49,12 @@ async def analyze_sentiment(data: SentimentRequest, api_key: dict = Depends(get_
     memory.append({"text": data.text, "sentiment": sentiment})
     return {"sentiment": sentiment, "memory_size": len(memory)}
 
+# 🧠 Recall memory
 @app.get("/memory/")
 async def get_memory(api_key: dict = Depends(get_api_key)):
     return {"memory": memory, "total": len(memory)}
 
+# 🧹 Clear memory (Admin-only)
 @app.delete("/admin/clear/")
 async def clear_memory(api_key: dict = Depends(get_api_key)):
     if api_key["type"] != "admin":
@@ -56,7 +62,7 @@ async def clear_memory(api_key: dict = Depends(get_api_key)):
     memory.clear()
     return {"message": "Memory cleared successfully", "total": len(memory)}
 
-# 🧠 Generate new user API keys
+# 🔑 Generate new user API keys
 @app.post("/api/generate_key")
 async def generate_api_key():
     new_key = "USER-" + secrets.token_hex(4)
