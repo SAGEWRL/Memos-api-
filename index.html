@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0f111a;
+      color: #f3f3f3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 { color: #00ffc3; }
+    #memories {
+      margin-top: 20px;
+      width: 80%;
+      max-width: 700px;
+    }
+    .memory {
+      border: 1px solid #333;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 10px;
+      background-color: #1a1c25;
+    }
+    input, textarea {
+      width: 100%;
+      margin: 5px 0;
+      border: none;
+      border-radius: 8px;
+      padding: 8px;
+      background: #222;
+      color: #fff;
+    }
+    button {
+      padding: 8px 12px;
+      background: #00ffc3;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 5px;
+      color: #000;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧠 Memory Dashboard</h1>
+
+  <div id="form">
+    <input id="title" placeholder="Title" />
+    <textarea id="content" placeholder="Memory content..."></textarea>
+    <input id="tags" placeholder="Tags (optional)" />
+    <button onclick="addMemory()">💾 Save Memory</button>
+  </div>
+
+  <div id="memories"></div>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+
+    async function loadMemories() {
+      const res = await fetch(`${API}/memories/`);
+      const data = await res.json();
+      const div = document.getElementById('memories');
+      div.innerHTML = '';
+      data.forEach(m => {
+        const el = document.createElement('div');
+        el.className = 'memory';
+        el.innerHTML = `<h3>${m.title}</h3><p>${m.content}</p><small>${m.tags}</small><br/>
+          <button onclick="delMemory(${m.id})">🗑 Delete</button>`;
+        div.appendChild(el);
+      });
+    }
+
+    async function addMemory() {
+      const title = document.getElementById('title').value;
+      const content = document.getElementById('content').value;
+      const tags = document.getElementById('tags').value;
+
+      await fetch(`${API}/memories/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ title, content, tags })
+      });
+      loadMemories();
+    }
+
+    async function delMemory(id) {
+      await fetch(`${API}/memories/${id}`, { method: 'DELETE' });
+      loadMemories();
+    }
+
+    loadMemories();
+  </script>
+</body>
+</html>
