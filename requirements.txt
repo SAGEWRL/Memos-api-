@@ -1,5 +1,6 @@
 fastapi
 uvicorn
-gunicorn
 textblob
-sqlalchemy
+pydantic
+gunicorn
+jinja2
