@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MemOS Memory API</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🧠 MemOS Memory API</h1>
+    <p>Generate a new API key or analyze text sentiment.</p>
+
+    <div class="card">
+      <h2>Generate User API Key</h2>
+      <button id="generateBtn">Generate New Key</button>
+      <div id="keyBox" class="hidden">
+        <p><strong>New Key:</strong> <span id="newKey"></span></p>
+        <button id="copyBtn">Copy Key</button>
+        <p class="timestamp" id="timestamp"></p>
+      </div>
+      <p id="status"></p>
+    </div>
+
+    <footer>
+      <p>Powered by <strong>MemOS</strong> 💾 — Built with FastAPI & Firebase</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
