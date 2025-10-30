@@ -1,4 +1,9 @@
-// ===== Firebase Setup =====
+// ✅ Firebase setup
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+// 🧩 Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyB-fWDSWcJdDsitrQnjsglpFU3XQlwNqIU",
   authDomain: "memos-api.firebaseapp.com",
@@ -8,68 +13,62 @@ const firebaseConfig = {
   appId: "1:48119548245:web:23926bc573ff2fca48c7dc"
 };
 
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-let currentUser = null;
-
-// ===== Auth Section =====
-async function signUp() {
+// 🧠 Sign Up
+window.signUp = async function() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   try {
-    await auth.createUserWithEmailAndPassword(email, password);
-    alert("✅ Account created successfully!");
+    await createUserWithEmailAndPassword(auth, email, password);
+    document.getElementById("auth-status").innerText = "✅ Account created & logged in!";
   } catch (err) {
-    alert("⚠️ " + err.message);
+    document.getElementById("auth-status").innerText = "❌ " + err.message;
   }
-}
+};
 
-async function login() {
+// 🔐 Login
+window.login = async function() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   try {
-    await auth.signInWithEmailAndPassword(email, password);
-    alert("✅ Logged in successfully!");
+    await signInWithEmailAndPassword(auth, email, password);
+    document.getElementById("auth-status").innerText = "✅ Logged in!";
   } catch (err) {
-    alert("⚠️ " + err.message);
+    document.getElementById("auth-status").innerText = "❌ " + err.message;
   }
-}
+};
 
-function logout() {
-  auth.signOut();
-  alert("👋 Logged out!");
-}
+// 🚪 Logout
+window.logout = async function() {
+  await signOut(auth);
+  document.getElementById("auth-status").innerText = "👋 Logged out.";
+};
 
-auth.onAuthStateChanged(user => {
-  currentUser = user;
-  document.getElementById("auth-status").innerText = user
-    ? `Logged in as ${user.email}`
-    : "Not logged in";
-});
-
-// ===== API Key Generation =====
-async function generateKey() {
-  if (!currentUser) {
-    alert("⚠️ Please log in first.");
+// 🔑 Generate API key & save to Firestore
+window.generateKey = async function() {
+  const user = auth.currentUser;
+  if (!user) {
+    alert("Please log in first!");
     return;
   }
 
-  const res = await fetch("/api/generate_key", {
-    method: "POST",
-  });
-
+  const res = await fetch("/api/generate_key", { method: "POST" });
   const data = await res.json();
-  const keyDisplay = document.getElementById("key-display");
-  keyDisplay.innerHTML = `
-    🔑 <b>Your new API Key:</b><br>
-    <code>${data.key}</code>
-    <br><br>
-    <button onclick="copyKey('${data.key}')">Copy Key</button>
-  `;
-}
 
-function copyKey(key) {
-  navigator.clipboard.writeText(key);
-  alert("📋 Key copied to clipboard!");
-}
+  document.getElementById("key-display").innerText = "🆕 Your key: " + data.key;
+
+  try {
+    await addDoc(collection(db, "api_keys"), {
+      email: user.email,
+      key: data.key,
+      createdAt: serverTimestamp(),
+      usageCount: 0
+    });
+    console.log("Key saved to Firestore");
+  } catch (e) {
+    console.error("Error saving key:", e);
+  }
+};
