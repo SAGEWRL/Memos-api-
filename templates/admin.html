@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MemOS Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <h1>🧠 MemOS Admin Dashboard</h1>
+  <p>Monitor memory entries, clear them, or manage users.</p>
+
+  <div class="admin-box">
+    <label>Enter Admin Key:</label><br />
+    <input type="password" id="adminKey" placeholder="ADMIN-12345SECRET" />
+    <button onclick="loadMemory()">Load Memory</button>
+    <button onclick="clearMemory()">Clear Memory</button>
+  </div>
+
+  <hr />
+
+  <div id="memoryContainer">
+    <h2>🧩 Stored Memory</h2>
+    <div id="memoryList">No data loaded yet.</div>
+  </div>
+
+  <script>
+    async function loadMemory() {
+      const key = document.getElementById("adminKey").value.trim();
+      if (!key) return alert("Enter admin key!");
+
+      const res = await fetch("/memory/", {
+        headers: { "x-api-key": key },
+      });
+
+      if (!res.ok) return alert("❌ Invalid admin key!");
+
+      const data = await res.json();
+      const container = document.getElementById("memoryList");
+      container.innerHTML = "";
+
+      if (data.memory.length === 0) {
+        container.innerHTML = "<p>No memory stored yet.</p>";
+        return;
+      }
+
+      data.memory.forEach((item, i) => {
+        const div = document.createElement("div");
+        div.className = "memory-item";
+        div.innerHTML = `
+          <strong>#${i + 1}</strong> — ${item.text}  
+          <span class="tag">${item.sentiment}</span>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function clearMemory() {
+      const key = document.getElementById("adminKey").value.trim();
+      if (!key) return alert("Enter admin key!");
+
+      const res = await fetch("/admin/clear/", {
+        method: "DELETE",
+        headers: { "x-api-key": key },
+      });
+
+      const data = await res.json();
+      alert("🧹 " + data.message);
+      document.getElementById("memoryList").innerHTML = "<p>All cleared.</p>";
+    }
+  </script>
+</body>
+</html>
