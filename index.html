@@ -2,119 +2,94 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MemOS API Portal</title>
+
+  <!-- 💅 Simple Styling -->
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(120deg, #1f1f1f, #2d2d2d);
       color: white;
-      margin: 0;
-      padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      text-align: center;
+      min-height: 100vh;
+      margin: 0;
     }
+
     h1 {
-      font-size: 2rem;
-      margin-bottom: 20px;
+      color: #00ffc3;
+      text-shadow: 0 0 10px #00ffc3;
+      font-size: 2.5rem;
     }
-    p {
-      max-width: 400px;
-      margin-bottom: 20px;
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0, 255, 195, 0.2);
+      text-align: center;
+      max-width: 450px;
+      width: 90%;
     }
-    input {
-      padding: 10px;
-      width: 250px;
-      border: none;
-      border-radius: 5px;
-      margin-bottom: 10px;
-      font-size: 1rem;
-    }
+
     button {
-      padding: 10px 20px;
+      background: #00ffc3;
       border: none;
-      border-radius: 5px;
-      font-size: 1rem;
-      background-color: #00b4d8;
-      color: white;
+      padding: 12px 25px;
+      border-radius: 10px;
+      color: #111;
+      font-weight: 600;
       cursor: pointer;
-      transition: 0.3s;
+      transition: all 0.3s ease;
+      margin-top: 20px;
     }
+
     button:hover {
-      background-color: #0077b6;
+      background: #00d6a5;
+      transform: scale(1.05);
     }
-    .key-box {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 10px;
-      border-radius: 5px;
+
+    #key-display {
       margin-top: 20px;
       font-size: 1rem;
-      width: 280px;
-      word-break: break-all;
+      color: #00ffc3;
+      word-wrap: break-word;
     }
+
     footer {
-      position: absolute;
-      bottom: 15px;
-      font-size: 0.8rem;
-      color: #bbb;
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: #aaa;
+    }
+
+    footer a {
+      color: #00ffc3;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h1>🔑 MemOS API Portal</h1>
-  <p>Generate your personal MemOS API key to access intelligent services and integrations.</p>
-  
-  <input type="text" id="username" placeholder="Enter your name or email" />
-  <button id="generateBtn">Generate API Key</button>
+  <div class="container">
+    <h1>🔐 MemOS API Key Generator</h1>
+    <p>Generate your own API key to access MemOS endpoints.</p>
 
-  <div id="keyContainer" class="key-box" style="display:none;">
-    <p>Your API Key:</p>
-    <p id="apiKey" style="font-weight: bold;"></p>
-    <button onclick="copyKey()">Copy Key</button>
+    <button id="generate-btn">Generate API Key</button>
+
+    <div id="key-display"></div>
+
+    <footer>
+      <p>Powered by <a href="https://memos-api-ahnh.onrender.com/docs" target="_blank">MemOS API</a></p>
+    </footer>
   </div>
 
-  <footer>© 2025 MemOS Network — Powered by J.C. Washington</footer>
-
-  <script>
-    // 🔗 Backend endpoint hosted on Render
-    const backendURL = "https://memos-api-ahnh.onrender.com/api/generate_key";
-
-    document.getElementById('generateBtn').addEventListener('click', async () => {
-      const username = document.getElementById('username').value.trim();
-      if (!username) {
-        alert("Please enter your name or email first!");
-        return;
-      }
-
-      try {
-        const response = await fetch(backendURL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username })
-        });
-        const data = await response.json();
-        if (data.key || data.api_key) {
-          const key = data.key || data.api_key;
-          document.getElementById('apiKey').innerText = key;
-          document.getElementById('keyContainer').style.display = "block";
-        } else {
-          alert("Error generating key: " + (data.detail || "Unknown error"));
-        }
-      } catch (error) {
-        alert("Connection failed. Check if your API is running.");
-        console.error(error);
-      }
-    });
-
-    function copyKey() {
-      const text = document.getElementById('apiKey').innerText;
-      navigator.clipboard.writeText(text);
-      alert("✅ API Key copied to clipboard!");
-    }
-  </script>
+  <!-- ⚙️ Link to Firebase + FastAPI integration -->
+  <script type="module" src="/static/script.js"></script>
 </body>
 </html>
