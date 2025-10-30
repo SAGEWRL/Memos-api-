@@ -1,73 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MemOS Admin Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — MemOS</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 30px; }
+        h1 { color: #2b2b2b; }
+        .key-list { margin-top: 20px; }
+        .key-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f3f3f3;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+        button { margin-left: 10px; }
+    </style>
 </head>
 <body>
-  <h1>🧠 MemOS Admin Dashboard</h1>
-  <p>Monitor memory entries, clear them, or manage users.</p>
+    <h1>🧠 MemOS Admin Dashboard</h1>
+    <p>Manage user API keys here.</p>
 
-  <div class="admin-box">
-    <label>Enter Admin Key:</label><br />
-    <input type="password" id="adminKey" placeholder="ADMIN-12345SECRET" />
-    <button onclick="loadMemory()">Load Memory</button>
-    <button onclick="clearMemory()">Clear Memory</button>
-  </div>
+    <div class="key-list" id="keyList"></div>
 
-  <hr />
+    <script>
+        async function loadKeys() {
+            const res = await fetch("/get-keys");
+            const keys = await res.json();
+            const container = document.getElementById("keyList");
+            container.innerHTML = "";
 
-  <div id="memoryContainer">
-    <h2>🧩 Stored Memory</h2>
-    <div id="memoryList">No data loaded yet.</div>
-  </div>
+            if (keys.length === 0) {
+                container.innerHTML = "<p>No keys found.</p>";
+                return;
+            }
 
-  <script>
-    async function loadMemory() {
-      const key = document.getElementById("adminKey").value.trim();
-      if (!key) return alert("Enter admin key!");
+            keys.forEach(k => {
+                const div = document.createElement("div");
+                div.className = "key-item";
+                div.innerHTML = `
+                    <span><b>${k.email}</b> — ${k.key}</span>
+                    <div>
+                        <button onclick="copyKey('${k.key}')">Copy</button>
+                        <button onclick="deleteKey('${k.key}')">Delete</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
 
-      const res = await fetch("/memory/", {
-        headers: { "x-api-key": key },
-      });
+        async function deleteKey(key) {
+            const formData = new FormData();
+            formData.append("key", key);
+            await fetch("/delete-key", { method: "POST", body: formData });
+            loadKeys();
+        }
 
-      if (!res.ok) return alert("❌ Invalid admin key!");
+        function copyKey(key) {
+            navigator.clipboard.writeText(key);
+            alert("Copied: " + key);
+        }
 
-      const data = await res.json();
-      const container = document.getElementById("memoryList");
-      container.innerHTML = "";
-
-      if (data.memory.length === 0) {
-        container.innerHTML = "<p>No memory stored yet.</p>";
-        return;
-      }
-
-      data.memory.forEach((item, i) => {
-        const div = document.createElement("div");
-        div.className = "memory-item";
-        div.innerHTML = `
-          <strong>#${i + 1}</strong> — ${item.text}  
-          <span class="tag">${item.sentiment}</span>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    async function clearMemory() {
-      const key = document.getElementById("adminKey").value.trim();
-      if (!key) return alert("Enter admin key!");
-
-      const res = await fetch("/admin/clear/", {
-        method: "DELETE",
-        headers: { "x-api-key": key },
-      });
-
-      const data = await res.json();
-      alert("🧹 " + data.message);
-      document.getElementById("memoryList").innerHTML = "<p>All cleared.</p>";
-    }
-  </script>
+        loadKeys();
+    </script>
 </body>
 </html>
