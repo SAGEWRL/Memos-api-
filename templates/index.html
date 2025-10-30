@@ -1,44 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MemOS Memory API</title>
-    <style>
-        body {
-            font-family: system-ui, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        h1 { color: #00bcd4; }
-        p { opacity: 0.8; }
-        button {
-            background: #00bcd4;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MemOS Memory API</title>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      background: #0b0c10;
+      color: #c5c6c7;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      color: #66fcf1;
+    }
+    .card {
+      background: #1f2833;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(102, 252, 241, 0.2);
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+    button {
+      background: #45a29e;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #66fcf1;
+      color: #000;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <h1>🚀 MemOS Memory API</h1>
-    <p>Welcome! Generate an API key to access the endpoints.</p>
-    <button onclick="generateKey()">Generate Key</button>
-    <p id="result"></p>
+  <h1>🧠 MemOS Memory API</h1>
+  <div class="card">
+    <p>Generate a new user API key below 👇</p>
+    <button id="generate">Generate Key</button>
+    <p class="result" id="result"></p>
+  </div>
 
-    <script>
-        async function generateKey() {
-            const res = await fetch('/api/generate_key', { method: 'POST' });
-            const data = await res.json();
-            document.getElementById('result').innerText = '🔑 Your API Key: ' + data.key;
-        }
-    </script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Import Firebase core
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // ✅ Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyB-fWDSWcJdDsitrQnjsglpFU3XQlwNqIU",
+      authDomain: "memos-api.firebaseapp.com",
+      projectId: "memos-api",
+      storageBucket: "memos-api.firebasestorage.app",
+      messagingSenderId: "48119548245",
+      appId: "1:48119548245:web:23926bc573ff2fca48c7dc"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 🔑 Generate API key
+    document.getElementById("generate").addEventListener("click", async () => {
+      const result = document.getElementById("result");
+      result.textContent = "Generating...";
+      try {
+        const res = await fetch("/api/generate_key", { method: "POST" });
+        const data = await res.json();
+
+        // Display the key
+        result.textContent = "Your new API Key: " + data.key;
+
+        // Save to Firestore
+        await addDoc(collection(db, "api_keys"), {
+          key: data.key,
+          created_at: new Date().toISOString()
+        });
+      } catch (error) {
+        result.textContent = "❌ Error: " + error.message;
+      }
+    });
+  </script>
 </body>
 </html>
