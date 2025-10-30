@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from textblob import TextBlob
 import secrets
 
-app = FastAPI(title="MemOS Memory API", version="4.2")
+app = FastAPI(title="MemOS Memory API", version="5.0")
 
 # 🔐 API Keys
 ADMIN_KEY = "ADMIN-12345SECRET"
