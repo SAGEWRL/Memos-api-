@@ -1,70 +1,64 @@
-from fastapi import FastAPI, HTTPException, Depends, Security, Request
-from fastapi.security.api_key import APIKeyHeader, APIKey
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
-from textblob import TextBlob
-import secrets
+import uuid
+import json
+import os
 
-app = FastAPI(title="MemOS Memory API", version="5.0")
+app = FastAPI()
 
-# 🔐 API Keys
-ADMIN_KEY = "ADMIN-12345SECRET"
-USER_KEYS = ["USER-abc123", "USER-xyz456"]
-
-API_KEY_NAME = "x-api-key"
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
-
-# 📁 Serve static + templates
+# ✅ Static & templates setup
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# 🔍 Verify API key
-async def get_api_key(api_key_header: str = Security(api_key_header)):
-    if api_key_header == ADMIN_KEY:
-        return {"type": "admin", "key": api_key_header}
-    elif api_key_header in USER_KEYS:
-        return {"type": "user", "key": api_key_header}
-    else:
-        raise HTTPException(status_code=401, detail="Missing or invalid API key")
+# ✅ Data file for storing API keys
+DATA_FILE = "api_keys.json"
+if not os.path.exists(DATA_FILE):
+    with open(DATA_FILE, "w") as f:
+        json.dump([], f)
 
-# 🧩 Models
-class SentimentRequest(BaseModel):
-    text: str
+# ✅ Load keys from file
+def load_keys():
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
 
-# 🧠 Memory store
-memory = []
+# ✅ Save keys to file
+def save_keys(keys):
+    with open(DATA_FILE, "w") as f:
+        json.dump(keys, f, indent=4)
 
-# 🏠 Homepage (frontend)
+# ✅ Homepage route
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# 💬 Analyze & store sentiment
-@app.post("/sentiment/")
-async def analyze_sentiment(data: SentimentRequest, api_key: dict = Depends(get_api_key)):
-    sentiment_score = TextBlob(data.text).sentiment.polarity
-    sentiment = "positive" if sentiment_score > 0 else "negative" if sentiment_score < 0 else "neutral"
-    memory.append({"text": data.text, "sentiment": sentiment})
-    return {"sentiment": sentiment, "memory_size": len(memory)}
+# ✅ Generate new API key
+@app.post("/generate-key")
+async def generate_key(email: str = Form(...)):
+    keys = load_keys()
+    new_key = {
+        "email": email,
+        "key": str(uuid.uuid4())
+    }
+    keys.append(new_key)
+    save_keys(keys)
+    return {"message": "Key generated successfully", "key": new_key["key"]}
 
-# 🧠 Recall memory
-@app.get("/memory/")
-async def get_memory(api_key: dict = Depends(get_api_key)):
-    return {"memory": memory, "total": len(memory)}
+# ✅ Fetch all keys (for admin dashboard)
+@app.get("/get-keys")
+async def get_keys():
+    return load_keys()
 
-# 🧹 Clear memory (Admin-only)
-@app.delete("/admin/clear/")
-async def clear_memory(api_key: dict = Depends(get_api_key)):
-    if api_key["type"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin key required")
-    memory.clear()
-    return {"message": "Memory cleared successfully", "total": len(memory)}
+# ✅ Delete a key by value
+@app.post("/delete-key")
+async def delete_key(key: str = Form(...)):
+    keys = load_keys()
+    new_keys = [k for k in keys if k["key"] != key]
+    save_keys(new_keys)
+    return {"message": "Key deleted successfully"}
 
-# 🔑 Generate new user API keys
-@app.post("/api/generate_key")
-async def generate_api_key():
-    new_key = "USER-" + secrets.token_hex(4)
-    USER_KEYS.append(new_key)
-    return {"key": new_key}
+# ✅ Admin dashboard route
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})
