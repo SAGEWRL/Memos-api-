@@ -1,97 +1,81 @@
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
-import firebase_admin
-from firebase_admin import credentials, auth, firestore
-import secrets
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+import json
+import os
 
 app = Flask(__name__)
-CORS(app)
+app.secret_key = "YOUR_SECRET_KEY"  # Change this to something strong & private
 
-# ---- Initialize Firebase ----
-cred = credentials.Certificate("serviceAccountKey.json")  # your Firebase key
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+DATA_FILE = 'api_keys.json'
+USERS_FILE = 'users.json'
 
+# 🔹 Admin credentials
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "12345"  # Change this before deployment
 
-# ---- Home Page ----
 @app.route('/')
 def home():
-    return render_template("index.html")
+    return render_template('index.html')
 
+@app.route('/save-key', methods=['POST'])
+def save_key():
+    data = request.json
+    key_name = data.get('key_name')
+    key_value = data.get('key_value')
 
-# ---- Signup ----
-@app.route('/signup', methods=['POST'])
-def signup():
-    try:
-        data = request.get_json()
-        email = data['email']
-        password = data['password']
+    if not key_name or not key_value:
+        return jsonify({'success': False, 'message': 'Missing key name or value!'})
 
-        user = auth.create_user(email=email, password=password)
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r') as f:
+            keys = json.load(f)
+    else:
+        keys = {}
 
-        db.collection("users").document(user.uid).set({
-            "email": email,
-            "api_key": None
-        })
-        return jsonify({"message": "User created successfully!", "uid": user.uid})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+    keys[key_name] = key_value
 
+    with open(DATA_FILE, 'w') as f:
+        json.dump(keys, f, indent=4)
 
-# ---- Login ----
-@app.route('/login', methods=['POST'])
-def login():
-    try:
-        data = request.get_json()
-        email = data['email']
-        password = data['password']
+    return jsonify({'success': True, 'message': f'Key \"{key_name}\" saved successfully!'})
 
-        users_ref = db.collection("users").where("email", "==", email).get()
-        if not users_ref:
-            return jsonify({"error": "User not found"}), 404
+# 🔐 Admin login page
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template('login.html', error="Invalid credentials")
+    return render_template('login.html')
 
-        # Firebase Admin doesn’t verify passwords directly — handled by frontend SDK
-        return jsonify({"message": "Login simulated for demo"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+# 🚪 Logout
+@app.route('/admin/logout')
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
 
-
-# ---- Generate API Key ----
-@app.route('/generate-key', methods=['POST'])
-def generate_key():
-    try:
-        data = request.get_json()
-        email = data['email']
-
-        users_ref = db.collection("users").where("email", "==", email).get()
-        if not users_ref:
-            return jsonify({"error": "User not found"}), 404
-
-        user_doc = users_ref[0]
-        new_key = secrets.token_hex(16)
-        db.collection("users").document(user_doc.id).update({"api_key": new_key})
-        return jsonify({"key": new_key})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-
-# ---- Admin Dashboard ----
+# 🧠 Admin dashboard (protected)
 @app.route('/admin')
-def admin():
-    try:
-        users = db.collection("users").get()
-        data = []
-        for user in users:
-            user_data = user.to_dict()
-            data.append({
-                "email": user_data.get("email"),
-                "api_key": user_data.get("api_key")
-            })
-        return render_template("admin.html", users=data)
-    except Exception as e:
-        return f"Error loading admin dashboard: {e}", 500
+def admin_dashboard():
+    if not session.get('admin_logged_in'):
+        return redirect(url_for('admin_login'))
 
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r') as f:
+            keys = json.load(f)
+    else:
+        keys = {}
 
-# ---- Run App ----
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r') as f:
+            users = json.load(f)
+    else:
+        users = {}
+
+    return render_template('admin.html', keys=keys, users=users)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)
