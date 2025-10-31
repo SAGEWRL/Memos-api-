@@ -10,7 +10,7 @@ document.getElementById("generateBtn").addEventListener("click", async () => {
   keyBox.classList.add("hidden");
 
   try {
-    const res = await fetch(`${baseURL}/api/generate_key`, {
+    const res = await fetch(${baseURL}/api/generate_key, {
       method: "POST",
     });
     const data = await res.json();
