@@ -1,71 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard — MemOS</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        body { font-family: Arial, sans-serif; padding: 30px; }
-        h1 { color: #2b2b2b; }
-        .key-list { margin-top: 20px; }
-        .key-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #f3f3f3;
-            padding: 10px 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-        }
-        button { margin-left: 10px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
 </head>
 <body>
-    <h1>🧠 MemOS Admin Dashboard</h1>
-    <p>Manage user API keys here.</p>
-
-    <div class="key-list" id="keyList"></div>
-
-    <script>
-        async function loadKeys() {
-            const res = await fetch("/get-keys");
-            const keys = await res.json();
-            const container = document.getElementById("keyList");
-            container.innerHTML = "";
-
-            if (keys.length === 0) {
-                container.innerHTML = "<p>No keys found.</p>";
-                return;
-            }
-
-            keys.forEach(k => {
-                const div = document.createElement("div");
-                div.className = "key-item";
-                div.innerHTML = `
-                    <span><b>${k.email}</b> — ${k.key}</span>
-                    <div>
-                        <button onclick="copyKey('${k.key}')">Copy</button>
-                        <button onclick="deleteKey('${k.key}')">Delete</button>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-        }
-
-        async function deleteKey(key) {
-            const formData = new FormData();
-            formData.append("key", key);
-            await fetch("/delete-key", { method: "POST", body: formData });
-            loadKeys();
-        }
-
-        function copyKey(key) {
-            navigator.clipboard.writeText(key);
-            alert("Copied: " + key);
-        }
-
-        loadKeys();
-    </script>
+  <h1>Registered Users</h1>
+  <table border="1">
+    <tr>
+      <th>Email</th>
+      <th>API Key</th>
+    </tr>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.email }}</td>
+      <td>{{ user.api_key if user.api_key else 'No key yet' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
 </body>
 </html>
