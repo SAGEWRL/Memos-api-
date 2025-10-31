@@ -1,140 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🧠 MemOS Memory API</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      padding: 50px;
-    }
-    input, button {
-      margin: 5px;
-      padding: 10px;
-      border-radius: 6px;
-      border: none;
-    }
-    input {
-      width: 250px;
-    }
-    button {
-      background: #38bdf8;
-      color: #0f172a;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover {
-      background: #0ea5e9;
-    }
-    .section {
-      background: #1e293b;
-      border-radius: 10px;
-      padding: 20px;
-      margin: 20px auto;
-      width: 350px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemOS Memory API</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <h1>🧠 MemOS Memory API</h1>
-  <p>Login, Sign Up, and Generate your API key securely.</p>
+    <h1>🧠 MemOS Memory API</h1>
+    <p>Generate API keys, log in, and access memory features securely.</p>
 
-  <div class="section">
-    <h2>🔐 Login / Sign Up</h2>
-    <input type="email" id="email" placeholder="Enter your email"><br>
-    <input type="password" id="password" placeholder="Enter password"><br>
-    <button onclick="signUp()">Sign Up</button>
-    <button onclick="login()">Login</button>
-    <button onclick="logout()">Logout</button>
-    <p id="auth-status"></p>
-  </div>
+    <div id="auth-section">
+        <h2>Login / Sign Up</h2>
+        <input type="email" id="email" placeholder="Enter email" />
+        <input type="password" id="password" placeholder="Enter password" />
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="login()">Login</button>
+        <button onclick="logout()">Logout</button>
+        <p id="auth-status"></p>
+    </div>
 
-  <div class="section">
-    <h2>🔑 Generate API Key</h2>
-    <button onclick="generateKey()">Generate Key</button>
-    <p id="key-display"></p>
-  </div>
+    <hr>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+    <div id="key-section">
+        <h2>🔑 Generate User API Key</h2>
+        <button onclick="generateKey()">Generate Key</button>
+        <p id="key-display"></p>
+    </div>
 
-    // 🔥 Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyB-fWDSWcJdDsitrQnjsglpFU3XQlwNqIU",
-      authDomain: "memos-api.firebaseapp.com",
-      projectId: "memos-api",
-      storageBucket: "memos-api.firebasestorage.app",
-      messagingSenderId: "48119548245",
-      appId: "1:48119548245:web:23926bc573ff2fca48c7dc"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // 🧠 Sign Up
-    window.signUp = async function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-        document.getElementById("auth-status").innerText = "✅ Account created & logged in!";
-      } catch (err) {
-        document.getElementById("auth-status").innerText = "❌ " + err.message;
-      }
-    };
-
-    // 🔐 Login
-    window.login = async function() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        document.getElementById("auth-status").innerText = "✅ Logged in!";
-      } catch (err) {
-        document.getElementById("auth-status").innerText = "❌ " + err.message;
-      }
-    };
-
-    // 🚪 Logout
-    window.logout = async function() {
-      await signOut(auth);
-      document.getElementById("auth-status").innerText = "👋 Logged out.";
-    };
-
-    // 🔑 Generate API Key
-    window.generateKey = async function() {
-      const user = auth.currentUser;
-      if (!user) {
-        alert("Please log in first!");
-        return;
-      }
-
-      try {
-        const res = await fetch("https://memos-api-ahnh.onrender.com/api/generate_key", { method: "POST" });
-        const data = await res.json();
-        document.getElementById("key-display").innerText = "🆕 Your key: " + data.key;
-
-        await addDoc(collection(db, "api_keys"), {
-          email: user.email,
-          key: data.key,
-          createdAt: serverTimestamp(),
-          usageCount: 0
-        });
-
-        console.log("✅ Key saved to Firestore");
-      } catch (err) {
-        console.error("❌ Error generating key:", err);
-        alert("Error generating key. Check console.");
-      }
-    };
-  </script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js"></script>
+    <script type="module" src="/static/main.js"></script>
 </body>
 </html>
