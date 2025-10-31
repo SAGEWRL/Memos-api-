@@ -4,3 +4,4 @@ textblob
 pydantic
 gunicorn
 jinja2
+python-multipart
