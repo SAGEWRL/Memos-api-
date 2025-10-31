@@ -1,81 +1,78 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
-import json
-import os
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.wsgi import WSGIMiddleware
+from textblob import TextBlob
+from flask import Flask, render_template_string
+import secrets
 
-app = Flask(__name__)
-app.secret_key = "YOUR_SECRET_KEY"  # Change this to something strong & private
+# -----------------------------
+# Flask Admin App
+# -----------------------------
+admin_app = Flask(__name__)
 
-DATA_FILE = 'api_keys.json'
-USERS_FILE = 'users.json'
+@admin_app.route("/")
+def admin_home():
+    html = """
+    <h1 style='font-family:Arial;text-align:center;color:#007BFF;'>Memos Admin Dashboard</h1>
+    <p style='text-align:center;'>Welcome to your control panel 🔐</p>
+    <ul style='text-align:center;list-style:none;'>
+      <li><a href='/admin/keys'>View Generated Keys</a></li>
+      <li><a href='/'>Back to API Home</a></li>
+    </ul>
+    """
+    return render_template_string(html)
 
-# 🔹 Admin credentials
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "12345"  # Change this before deployment
+# -----------------------------
+# FastAPI App
+# -----------------------------
+app = FastAPI(title="Memos API")
 
-@app.route('/')
+# Allow frontend or any site to access the API
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Mount Flask admin at /admin
+app.mount("/admin", WSGIMiddleware(admin_app))
+
+# -----------------------------
+# API ROUTES
+# -----------------------------
+
+@app.get("/", response_class=HTMLResponse)
 def home():
-    return render_template('index.html')
+    return """
+    <h2 style='text-align:center;color:#28A745;'>Welcome to Memos API 🚀</h2>
+    <p style='text-align:center;'>Use the <a href="/docs">/docs</a> to explore API endpoints.</p>
+    """
 
-@app.route('/save-key', methods=['POST'])
-def save_key():
-    data = request.json
-    key_name = data.get('key_name')
-    key_value = data.get('key_value')
+@app.post("/generate_key")
+def generate_key(email: str = Form(...)):
+    try:
+        # Generate secure random key
+        key = secrets.token_hex(16)
+        return {"success": True, "key": key}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
-    if not key_name or not key_value:
-        return jsonify({'success': False, 'message': 'Missing key name or value!'})
+@app.post("/analyze_text")
+def analyze_text(text: str = Form(...)):
+    blob = TextBlob(text)
+    sentiment = blob.sentiment.polarity
+    mood = "positive" if sentiment > 0 else "negative" if sentiment < 0 else "neutral"
+    return {"text": text, "mood": mood, "score": sentiment}
 
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            keys = json.load(f)
-    else:
-        keys = {}
+@app.get("/about")
+def about():
+    return {"app": "Memos", "version": "1.0", "creator": "J.C. Washington"}
 
-    keys[key_name] = key_value
-
-    with open(DATA_FILE, 'w') as f:
-        json.dump(keys, f, indent=4)
-
-    return jsonify({'success': True, 'message': f'Key \"{key_name}\" saved successfully!'})
-
-# 🔐 Admin login page
-@app.route('/admin/login', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session['admin_logged_in'] = True
-            return redirect(url_for('admin_dashboard'))
-        else:
-            return render_template('login.html', error="Invalid credentials")
-    return render_template('login.html')
-
-# 🚪 Logout
-@app.route('/admin/logout')
-def admin_logout():
-    session.pop('admin_logged_in', None)
-    return redirect(url_for('admin_login'))
-
-# 🧠 Admin dashboard (protected)
-@app.route('/admin')
-def admin_dashboard():
-    if not session.get('admin_logged_in'):
-        return redirect(url_for('admin_login'))
-
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            keys = json.load(f)
-    else:
-        keys = {}
-
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE, 'r') as f:
-            users = json.load(f)
-    else:
-        users = {}
-
-    return render_template('admin.html', keys=keys, users=users)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# -----------------------------
+# Run (local testing)
+# -----------------------------
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
