@@ -1,9 +1,14 @@
 // ✅ Firebase setup
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+import { 
+  getAuth, createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, signOut 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+import { 
+  getFirestore, collection, addDoc, serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-// 🧩 Your Firebase config
+// 🧩 Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyB-fWDSWcJdDsitrQnjsglpFU3XQlwNqIU",
   authDomain: "memos-api.firebaseapp.com",
@@ -47,7 +52,7 @@ window.logout = async function() {
   document.getElementById("auth-status").innerText = "👋 Logged out.";
 };
 
-// 🔑 Generate API key & save to Firestore
+// 🔑 Generate API key & save to Firestore + backend
 window.generateKey = async function() {
   const user = auth.currentUser;
   if (!user) {
@@ -55,20 +60,33 @@ window.generateKey = async function() {
     return;
   }
 
-  const res = await fetch("/api/generate_key", { method: "POST" });
-  const data = await res.json();
-
-  document.getElementById("key-display").innerText = "🆕 Your key: " + data.key;
-
   try {
+    // Replace with your live Render URL if hosted
+    const res = await fetch("/api/generate_key", { method: "POST" });
+    const data = await res.json();
+
+    const keyDisplay = document.getElementById("key-display");
+    keyDisplay.innerHTML = `
+      🆕 Your key: <b>${data.key}</b>
+      <button id="copyKey">Copy</button>
+    `;
+
+    // Copy functionality
+    document.getElementById("copyKey").onclick = () => {
+      navigator.clipboard.writeText(data.key);
+      alert("✅ Key copied to clipboard!");
+    };
+
+    // Save in Firestore
     await addDoc(collection(db, "api_keys"), {
       email: user.email,
       key: data.key,
       createdAt: serverTimestamp(),
       usageCount: 0
     });
-    console.log("Key saved to Firestore");
+
   } catch (e) {
-    console.error("Error saving key:", e);
+    console.error("Error generating key:", e);
+    alert("⚠️ Error generating key. Check console.");
   }
 };
