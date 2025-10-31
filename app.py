@@ -2,52 +2,46 @@ from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 import json
 import os
+import secrets
 
 app = Flask(__name__)
-CORS(app)  # allows requests from your frontend (Render/static site)
+CORS(app)
 
-# Path to JSON file that stores API keys
 DATA_FILE = 'api_keys.json'
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
-@app.route('/save-key', methods=['POST'])
-def save_key():
-    data = request.get_json(force=True)
-    key_name = data.get('key_name')
-    key_value = data.get('key_value')
+# ✅ Generate API key
+@app.route('/api/generate_key', methods=['POST'])
+def generate_key():
+    api_key = secrets.token_hex(16)  # random 32-char key
 
-    if not key_name or not key_value:
-        return jsonify({'success': False, 'message': 'Missing key name or value!'}), 400
-
-    # Load existing keys or create a new dict
-    keys = {}
+    # Save the key locally
     if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, 'r') as f:
+        with open(DATA_FILE, 'r') as f:
+            try:
                 keys = json.load(f)
-        except json.JSONDecodeError:
-            keys = {}
+            except json.JSONDecodeError:
+                keys = {}
+    else:
+        keys = {}
 
-    # Add/update key
-    keys[key_name] = key_value
-
-    # Save
+    keys[api_key] = {"email": "unknown", "usage": 0}
     with open(DATA_FILE, 'w') as f:
         json.dump(keys, f, indent=4)
 
-    return jsonify({'success': True, 'message': f'Key "{key_name}" saved successfully!'})
+    return jsonify({"key": api_key})
 
-# ---- ADMIN PANEL (optional, safe placeholder) ----
+# ✅ Optional: View saved keys (admin)
 @app.route('/admin', methods=['GET'])
 def admin_panel():
     if not os.path.exists(DATA_FILE):
-        return jsonify({'message': 'No keys found yet.'})
+        return jsonify({"message": "No keys found"})
     with open(DATA_FILE, 'r') as f:
         keys = json.load(f)
-    return jsonify({'saved_keys': keys})
+    return jsonify(keys)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
