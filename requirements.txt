@@ -1,6 +1,8 @@
 fastapi
+flask
 uvicorn
+textblob
+pydantic
+gunicorn
 jinja2
 python-multipart
-firebase-admin
-gunicorn
