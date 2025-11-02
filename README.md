@@ -1,7 +1,7 @@
 # 🧠 MemOs API
 
 MemOs (Memory + Emotion Operating System) is an experimental API that merges **emotion**, **memory**, and **intelligence**.  
-It currently focuses on **emotion recognition and key-based access**, serving as the **emotional layer** for future AI systems like **Vexa** and **Clikk**.
+It currently focuses on **emotion recognition and key-based access**, serving as the **emotional layer** for future AI systems . 
 
 Live URL → [https://memos-api-ahnh.onrender.com](https://memos-api-ahnh.onrender.com)
 
@@ -138,7 +138,7 @@ Next Phase: Memory Integration
 👨‍💻 Author
 
 Charles Washington Juma
-Founder of MemOs, Vexa, and Clikk
+Founder of MemOs, 
 📧 tnsageofficiall@gmail.com
 🌐 https://memos-api-ahnh.onrender.com
 
