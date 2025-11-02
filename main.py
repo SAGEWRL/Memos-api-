@@ -1,36 +1,80 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import uuid
+from textblob import TextBlob
+import secrets
+import json
+import os
 
 app = FastAPI()
 
-# Mount static folder
+# ✅ Mount static and templates folders
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Template setup
 templates = Jinja2Templates(directory="templates")
 
-# In-memory storage for generated keys (for demo)
-generated_keys = {}
+# ✅ Path for saving API keys
+DATA_FILE = "api_keys.json"
 
+
+# 🏠 Home Page
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
+# 🔑 Generate API Key
+@app.post("/generate_key")
+async def generate_key(email: str = Form(...)):
+    key = secrets.token_hex(16)
+
+    # Load old data
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+
+    # Save new key
+    data[email] = {"key": key, "usage": 0}
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+    return {"success": True, "key": key}
+
+
+# 🧠 Text Sentiment Analysis
+@app.post("/analyze_text")
+async def analyze_text(text: str = Form(...)):
+    if not text.strip():
+        return {"error": "No text provided"}
+
+    blob = TextBlob(text)
+    polarity = blob.sentiment.polarity
+
+    if polarity > 0:
+        mood = "Positive 😄"
+    elif polarity < 0:
+        mood = "Negative 😞"
+    else:
+        mood = "Neutral 😐"
+
+    return {"mood": mood, "score": polarity}
+
+
+# 🧩 Admin Dashboard
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    if not os.path.exists(DATA_FILE):
+        users = {}
+    else:
+        with open(DATA_FILE, "r") as f:
+            users = json.load(f)
 
-@app.post("/api/generate_key")
-async def generate_key():
-    key = uuid.uuid4().hex
-    generated_keys[key] = {"active": True}
-    return JSONResponse({"key": key})
+    return templates.TemplateResponse("admin.html", {"request": request, "users": users})
 
-@app.get("/api/verify_key/{key}")
-async def verify_key(key: str):
-    if key in generated_keys:
-        return {"valid": True, "message": "Key is valid."}
-    return {"valid": False, "message": "Invalid key."}
+
+# 🚀 Run locally
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
