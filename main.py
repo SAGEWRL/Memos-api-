@@ -1,80 +1,64 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from textblob import TextBlob
+import firebase_admin
+from firebase_admin import credentials, db
 import secrets
-import json
-import os
 
+# ✅ Initialize FastAPI
 app = FastAPI()
 
-# ✅ Mount static and templates folders
+# ✅ Initialize Firebase
+# Make sure this file exists in your project root (same folder as main.py)
+cred = credentials.Certificate("memos-service.json")  # ← Your service account file name
+firebase_admin.initialize_app(cred, {
+    "databaseURL": "https://memos-api-default-rtdb.firebaseio.com/"  # ← Your Firebase DB URL
+})
+
+# ✅ Static + Templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# ✅ Path for saving API keys
-DATA_FILE = "api_keys.json"
-
-
-# 🏠 Home Page
+# ✅ Home page (index.html)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
-# 🔑 Generate API Key
-@app.post("/generate_key")
-async def generate_key(email: str = Form(...)):
-    key = secrets.token_hex(16)
-
-    # Load old data
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            data = json.load(f)
-    else:
-        data = {}
-
-    # Save new key
-    data[email] = {"key": key, "usage": 0}
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
-    return {"success": True, "key": key}
-
-
-# 🧠 Text Sentiment Analysis
-@app.post("/analyze_text")
-async def analyze_text(text: str = Form(...)):
-    if not text.strip():
-        return {"error": "No text provided"}
-
-    blob = TextBlob(text)
-    polarity = blob.sentiment.polarity
-
-    if polarity > 0:
-        mood = "Positive 😄"
-    elif polarity < 0:
-        mood = "Negative 😞"
-    else:
-        mood = "Neutral 😐"
-
-    return {"mood": mood, "score": polarity}
-
-
-# 🧩 Admin Dashboard
+# ✅ Admin dashboard
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_panel(request: Request):
-    if not os.path.exists(DATA_FILE):
-        users = {}
-    else:
-        with open(DATA_FILE, "r") as f:
-            users = json.load(f)
+    return templates.TemplateResponse("admin.html", {"request": request})
 
-    return templates.TemplateResponse("admin.html", {"request": request, "users": users})
+# ✅ API: Generate key and store it in Firebase
+@app.post("/api/generate_key")
+async def generate_key():
+    new_key = secrets.token_hex(16)
+    ref = db.reference("api_keys")
+    ref.push({
+        "key": new_key,
+        "status": "active"
+    })
+    return JSONResponse({"success": True, "key": new_key})
 
+# ✅ API: Validate key
+@app.get("/api/validate/{key}")
+async def validate_key(key: str):
+    ref = db.reference("api_keys")
+    keys = ref.get()
 
-# 🚀 Run locally
+    if keys:
+        for _, data in keys.items():
+            if data.get("key") == key and data.get("status") == "active":
+                return {"valid": True, "message": "✅ Key is valid and active"}
+    return {"valid": False, "message": "❌ Invalid or inactive key"}
+
+# ✅ Fallback route
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "message": "MemOs API running perfectly"}
+
+# ✅ Run (local only)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
