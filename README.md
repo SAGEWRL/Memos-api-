@@ -105,7 +105,7 @@ MemOs keys can be used to:
 
 Tag user sessions with emotional context
 
-Personalize Vexa’s voice responses
+Personalize AI Chatbots voice responses
 
 Track emotion memory across sessions
 
